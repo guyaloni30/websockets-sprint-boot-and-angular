@@ -1,0 +1,13 @@
+digraph INFRA {
+  node [ color = "black", fillcolor = "#E6E6E6", height =1, style = "filled,bold,rounded", fontname = "Arial" ];
+  "WebSocketMessageBroker" [ label = "WebSocketMessageBroker
+(Spring::WebSocket::MessageBroker)", shape =rectangle, fillcolor = "#CCE0AC" ];
+  "WebSocketEndpoint" [ label = "WebSocketEndpoint
+(Spring::WebSocket::Endpoint)", shape =rectangle, fillcolor = "#E78F81" ];
+  "JsonMessageConverter" [ label = "JsonMessageConverter
+(Spring::Messaging::MessageConverter)", shape =rectangle ];
+  "ProxyServer" [ label = "ProxyServer
+(Proxy::Server)", shape =rectangle, fillcolor = "#E78F81" ];
+  "WebSocketEndpoint" -> "WebSocketMessageBroker";
+  "JsonMessageConverter" -> "WebSocketMessageBroker";
+}
