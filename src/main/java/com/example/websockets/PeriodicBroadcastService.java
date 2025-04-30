@@ -21,7 +21,7 @@ public class PeriodicBroadcastService {
 
     @Scheduled(fixedRate = 1000)
     public void sendTimestamp() {
-        WebsocketResponse message = new WebsocketResponse(-1, String.format("Periodic broadcast #" + id++));
+        WebsocketResponse message = new WebsocketResponse(-1, "Periodic broadcast #" + id++);
         messagingTemplate.convertAndSend("/topic/broadcast", message, headers);
     }
 }
