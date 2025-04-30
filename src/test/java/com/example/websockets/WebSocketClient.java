@@ -1,53 +1,37 @@
 package com.example.websockets;
 
-import org.springframework.messaging.converter.StringMessageConverter;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.stomp.*;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 import org.springframework.web.socket.sockjs.client.SockJsClient;
 import org.springframework.web.socket.sockjs.client.WebSocketTransport;
 
-import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
+@RequiredArgsConstructor
 public class WebSocketClient {
+    private static final JsonMapper jsonMapper = new JsonMapper();
     private static final String URL = "ws://localhost:8080/ws";
 
-    private final AtomicBoolean running = new AtomicBoolean(true);
+    private final int id;
 
+    private boolean running;
     private StompSession session;
 
-    public static void main(String[] args) {
-        new WebSocketClient().run();
-    }
-
-    private void run() {
-        connect();
-
+    public void run() {
         // Keep sending messages until user types 'exit'
         Scanner scanner = new Scanner(System.in);
-        while (running.get()) {
+        connect();
+        running = true;
+        while (running) {
             try {
                 System.out.println("Enter message (or 'exit' to quit):");
                 String message = scanner.nextLine();
-
-                if ("exit".equalsIgnoreCase(message)) {
-                    running.set(false);
-                    if (session != null && session.isConnected()) {
-                        session.disconnect();
-                    }
-                    System.exit(0);
-                }
-
-                if (session != null && session.isConnected()) {
-                    session.send("/app/hello", message);
-                } else {
-                    System.out.println("Not connected. Attempting to reconnect...");
-                    connect();
-                }
+                handleMessage(message);
             } catch (Exception e) {
                 System.out.println("Error: " + e.getMessage());
                 System.out.println("Attempting to reconnect...");
@@ -57,13 +41,33 @@ public class WebSocketClient {
         scanner.close();
     }
 
+    private void handleMessage(String message) {
+        if ("exit".equalsIgnoreCase(message)) {
+            running = false;
+            if (isConnected()) {
+                session.disconnect();
+            }
+            return;
+        }
+        if (isConnected()) {
+            session.send("/app/hello", new WebsocketResponse(id, message));
+        } else {
+            System.out.println("Not connected. Attempting to reconnect...");
+            connect();
+        }
+    }
+
+    private boolean isConnected() {
+        return (session != null) && session.isConnected();
+    }
+
     private void connect() {
         try {
             StandardWebSocketClient webSocketClient = new StandardWebSocketClient();
             WebSocketTransport transport = new WebSocketTransport(webSocketClient);
             SockJsClient sockJsClient = new SockJsClient(List.of(transport));
             WebSocketStompClient stompClient = new WebSocketStompClient(sockJsClient);
-            stompClient.setMessageConverter(new /*MappingJackson2MessageConverter*/StringMessageConverter());
+            stompClient.setMessageConverter(new WebsocketResponseMessageConverter());
             StompSessionHandler sessionHandler = new MyStompSessionHandler();
             session = stompClient.connectAsync(URL, sessionHandler).get();
         } catch (InterruptedException | ExecutionException e) {
@@ -81,29 +85,9 @@ public class WebSocketClient {
         public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
             System.out.println("Connected to WebSocket server");
             // Subscribe to the greeting topic
-            session.subscribe("/topic/greetings", new StompSessionHandlerAdapter() {
-                @Override
-                public Type getPayloadType(StompHeaders headers) {
-                    return String.class;
-                }
-
-                @Override
-                public void handleFrame(StompHeaders headers, Object payload) {
-                    System.out.println("Received greeting: " + payload);
-                }
-            });
-            // Subscribe to the timestamp topic
-            session.subscribe("/topic/timestamp", new StompSessionHandlerAdapter() {
-                @Override
-                public Type getPayloadType(StompHeaders headers) {
-                    return String.class;
-                }
-
-                @Override
-                public void handleFrame(StompHeaders headers, Object payload) {
-                    System.out.println("Received timestamp: " + payload);
-                }
-            });
+            session.subscribe("/topic/greetings", new StompSessionHandlerAdapterImpl(1234, "greeting"));
+            // Subscribe to the broadcast topic
+            session.subscribe("/topic/broadcast", new StompSessionHandlerAdapterImpl(1234, "broadcast"));
         }
 
         @Override
