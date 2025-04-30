@@ -13,12 +13,12 @@ public class StompSessionHandlerAdapterImpl extends StompSessionHandlerAdapter {
 
     @Override
     public Type getPayloadType(StompHeaders headers) {
-        return WebsocketResponse.class;
+        return MyWebsocketMessage.class;
     }
 
     @Override
     public void handleFrame(StompHeaders headers, Object payload) {
-        if (payload instanceof WebsocketResponse response) {
+        if (payload instanceof MyWebsocketMessage response) {
             System.out.println(id + ": Received " + type + ": " + response);
         } else {
             System.err.println("Unknown " + type + " message type " + payload.getClass().getName());

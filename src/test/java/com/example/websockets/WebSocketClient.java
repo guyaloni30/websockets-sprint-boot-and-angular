@@ -1,6 +1,5 @@
 package com.example.websockets;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.stomp.*;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
@@ -14,7 +13,6 @@ import java.util.concurrent.ExecutionException;
 
 @RequiredArgsConstructor
 public class WebSocketClient {
-    private static final JsonMapper jsonMapper = new JsonMapper();
     private static final String URL = "ws://localhost:8080/ws";
 
     private final int id;
@@ -47,10 +45,11 @@ public class WebSocketClient {
             if (isConnected()) {
                 session.disconnect();
             }
+            System.exit(-1);
             return;
         }
         if (isConnected()) {
-            session.send("/app/hello", new WebsocketResponse(id, message));
+            session.send("/app/hello", new MyWebsocketMessage(id, message));
         } else {
             System.out.println("Not connected. Attempting to reconnect...");
             connect();
@@ -67,7 +66,7 @@ public class WebSocketClient {
             WebSocketTransport transport = new WebSocketTransport(webSocketClient);
             SockJsClient sockJsClient = new SockJsClient(List.of(transport));
             WebSocketStompClient stompClient = new WebSocketStompClient(sockJsClient);
-            stompClient.setMessageConverter(new WebsocketResponseMessageConverter());
+            stompClient.setMessageConverter(new MyWebsocketMessageMessageConverter());
             StompSessionHandler sessionHandler = new MyStompSessionHandler();
             session = stompClient.connectAsync(URL, sessionHandler).get();
         } catch (InterruptedException | ExecutionException e) {

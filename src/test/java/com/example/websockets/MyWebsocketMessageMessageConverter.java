@@ -12,23 +12,23 @@ import java.io.IOException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class WebsocketResponseMessageConverter extends AbstractMessageConverter {
+public class MyWebsocketMessageMessageConverter extends AbstractMessageConverter {
     private static final JsonMapper jsonMapper = new JsonMapper();
 
-    public WebsocketResponseMessageConverter() {
+    public MyWebsocketMessageMessageConverter() {
         super(MimeTypeUtils.APPLICATION_JSON);
     }
 
     @Override
     protected boolean supports(Class<?> clazz) {
-        return WebsocketResponse.class == clazz;
+        return MyWebsocketMessage.class == clazz;
     }
 
     @Nullable
     protected Object convertFromInternal(Message<?> message, @Nullable Class<?> targetClass, @Nullable Object conversionHint) {
         try {
             if (message.getPayload() instanceof byte[] bytes) {
-                return jsonMapper.readValue(bytes, WebsocketResponse.class);
+                return jsonMapper.readValue(bytes, MyWebsocketMessage.class);
             } else {
                 throw new RuntimeException("Unknown message type " + message.getPayload().getClass().getName());
             }
