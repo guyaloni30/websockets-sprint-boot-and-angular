@@ -1,0 +1,21 @@
+server:
+  port: 8080
+  jetty:
+    accesslog:
+      enabled: true
+      filename: jetty-access.log
+    max-http-form-post-size: 100MB
+    threads.max: 200
+    threads.min: 8
+    threads.idle-timeout: 60000
+
+# WebSocket properties
+spring:
+  application:
+    name: websockets
+  websocket:
+    jetty:
+      max-text-message-size: 65536
+      max-binary-message-size: 65536
+      # SockJS properties
+      heartbeat-interval: 25000

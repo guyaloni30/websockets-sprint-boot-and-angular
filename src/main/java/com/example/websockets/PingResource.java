@@ -6,10 +6,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(path = "ping", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(path = "api/ping", produces = MediaType.APPLICATION_JSON_VALUE)
 public class PingResource {
     @GetMapping
-    public Pong ping() {
+    public Pong ping() throws InterruptedException {
+        Thread.sleep(500);
         return new Pong("pong", System.currentTimeMillis());
     }
 
