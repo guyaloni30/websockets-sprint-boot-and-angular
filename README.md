@@ -4,6 +4,8 @@ This project demonstrates real-time bidirectional communication between a Spring
 
 The application showcases WebSocket implementation best practices with STOMP (Streaming Text Oriented Messaging Protocol) over SockJS, providing fallback options for environments where WebSocket connections are not available. The frontend offers a user-friendly interface for sending messages and viewing real-time updates, while the backend handles message routing, periodic broadcasts, and connection management.
 
+It uses Spring Boot 3.4.5 and angular 19 along with a java websocket client.
+
 ## Usage Instructions
 ### Prerequisites
 - Java Development Kit (JDK) 24 or later
