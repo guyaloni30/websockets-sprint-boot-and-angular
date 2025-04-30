@@ -12,7 +12,7 @@ import java.util.Map;
 @Service
 @EnableScheduling
 @RequiredArgsConstructor
-public class BroadcastService {
+public class PeriodicBroadcastService {
     private static final Map<String, Object> headers = Map.of("content-type", MediaType.APPLICATION_JSON_VALUE);
 
     private final SimpMessagingTemplate messagingTemplate;
