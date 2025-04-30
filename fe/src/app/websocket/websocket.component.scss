@@ -1,0 +1,72 @@
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+}
+.status-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    div {
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin-right: 10px;
+        &.connected {
+            background-color: #4CAF50;
+            color: white;
+        }
+        &.disconnected {
+            background-color: #f44336;
+            color: white;
+        }
+    }
+}
+.message-container {
+    display: flex;
+    margin-bottom: 20px;
+}
+input {
+    flex-grow: 1;
+    padding: 8px;
+    margin-right: 10px;
+}
+button {
+    padding: 8px 16px;
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    &:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+    }
+}
+.responses {
+    margin-top: 20px;
+}
+.response-container {
+    display: flex;
+    justify-content: space-between;
+}
+.greeting, .timestamp {
+    width: 48%;
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 4px;
+}
+ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    li {
+        padding: 8px;
+        border-bottom: 1px solid #eee;
+        &:last-child {
+            border-bottom: none;
+        }
+    }
+}

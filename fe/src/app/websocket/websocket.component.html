@@ -1,0 +1,37 @@
+<div class="container">
+    <h2>WebSocket Demo</h2>
+    <div class="status-container">
+        <div [class]="isConnected() ? 'connected' : 'disconnected'">
+            {{ isConnected() ? 'Connected' : 'Disconnected' }}
+        </div>
+        <button (click)="handleConnectionToggle()">{{ isConnected() ? 'Disconnect' : 'Connect' }}</button>
+    </div>
+
+    <div class="message-container">
+        <input placeholder="Enter message..."
+               [disabled]="!isConnected()"
+               [(ngModel)]="newMessage"
+               (keyup.enter)="sendMessage()">
+        <button (click)="sendMessage()" [disabled]="!isConnected()">Send</button>
+    </div>
+
+    <div class="responses">
+        <h3>Responses</h3>
+        <div class="response-container">
+            <div class="greeting">
+                <h4>{{ greetings().length }} Greetings:</h4>
+                <ul>
+                    @for (greeting of greetings(); track $index) {
+                        <li>{{ greeting.id }}: {{ greeting.text }}</li>
+                    }
+                </ul>
+            </div>
+
+            <div class="timestamp">
+                <h4>Latest broadcast:</h4>
+                <p>{{ lastBroadcast().id }}</p>
+                <p>{{ lastBroadcast().text }}</p>
+            </div>
+        </div>
+    </div>
+</div>
