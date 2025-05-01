@@ -1,4 +1,4 @@
-import {Injectable, signal} from '@angular/core';
+import {Injectable, signal, WritableSignal} from '@angular/core';
 import {Client, IFrame, IMessage} from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
@@ -19,53 +19,45 @@ export class WebSocketService {
         onStompError: frame => this.onStompError(frame),
     });
 
-    // Connect to the WebSocket server
     public connect(): void {
         this.client.activate();
     }
 
-    // Disconnect from the WebSocket server
     public disconnect(): void {
         this.client.deactivate();
     }
 
-    // Send a message to the WebSocket server
     public sendMessage(message: MyWebsocketMessage): void {
+        this.send('greeting', message);
+        this.send('hello', message);
+    }
+
+    private send(destination: string, message: MyWebsocketMessage): void {
         if (this.client.connected) {
-            const body: string = JSON.stringify(message);
             this.client.publish({
-                destination: '/websockets-app/greeting',
-                body: body,
-            });
-            this.client.publish({
-                destination: '/websockets-app/hello',
-                body: body,
+                destination: `/websockets-app/${destination}`,
+                body: JSON.stringify(message),
             });
         } else {
-            console.log('Not connected to WebSocket server');
             this.connect();
         }
     }
 
-    // Handle connect event
     private onConnect(): void {
         console.log('Connected to WebSocket server');
         this.state.set(true);
-        this.client.subscribe('/user/queue/response-to-hello', (message: IMessage) => {
-            console.log('response-to-hello', message);
-            const data: MyWebsocketMessage = JSON.parse(message.body);
-            this.join.set(data);
-        });
-        this.client.subscribe('/topic/join', (message: IMessage) => {
-            console.log('greeting', message);
-            const data: MyWebsocketMessage = JSON.parse(message.body);
-            this.join.set(data);
-        });
-        this.client.subscribe('/topic/broadcast', (message: IMessage) => {
-            console.log('broadcast', message);
-            const data: MyWebsocketMessage = JSON.parse(message.body);
-            this.broadcast.set(data);
-        });
+        this.client.subscribe('/user/queue/response-to-hello', message => this.onMessage('response-to-hello', message, this.join));
+        this.client.subscribe('/topic/join', message => this.onMessage('greeting', message, this.join));
+        this.client.subscribe('/topic/broadcast', message => this.onMessage('broadcast', message, this.broadcast));
+    }
+
+    /**
+     * In this case we're handling messages of hte same type, so there's one message
+     */
+    private onMessage(type: string, message: IMessage, destination: WritableSignal<MyWebsocketMessage | null>): void {
+        console.log(type, message.body);
+        const data: MyWebsocketMessage = JSON.parse(message.body);
+        destination.set(data);
     }
 
     // Handle disconnect event
