@@ -1,5 +1,5 @@
 periodic:
-  broadcast: false
+  broadcast: true
 server:
   port: 8080
   jetty:

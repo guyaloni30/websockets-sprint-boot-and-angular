@@ -19,7 +19,7 @@ export class WebsocketComponent implements OnInit, OnDestroy {
         this.isConnected = computed<boolean>(() => this.webSocketService.state());
         this.lastBroadcast = computed(() => this.webSocketService.broadcast());
         effect(() => {
-            const greeting: MyWebsocketMessage | null = this.webSocketService.greeting();
+            const greeting: MyWebsocketMessage | null = this.webSocketService.join();
             if (greeting) {
                 this.greetings.update(currentList => {
                     currentList = [...currentList];

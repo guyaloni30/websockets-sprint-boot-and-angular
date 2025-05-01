@@ -30,8 +30,11 @@ public class WebSocketClient {
             while (running) {
                 try {
                     System.out.println("Enter message (or 'exit' to quit):");
-                    String message = scanner.nextLine();
-                    handleMessage(message);
+                    String message = scanner.nextLine().trim();
+                    if (!message.isEmpty()) {
+
+                        handleMessage(message);
+                    }
                 } catch (Exception e) {
                     System.out.println("Error: " + e.getMessage());
                     System.out.println("Attempting to reconnect...");

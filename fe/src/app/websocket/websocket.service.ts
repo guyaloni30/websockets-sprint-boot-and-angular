@@ -8,7 +8,7 @@ import SockJS from 'sockjs-client';
 export class WebSocketService {
     public readonly state = signal<boolean>(false);
     public readonly broadcast = signal<MyWebsocketMessage>({sessionId: '', id: 0, text: ''});
-    public readonly greeting = signal<MyWebsocketMessage | null>(null);
+    public readonly join = signal<MyWebsocketMessage | null>(null);
     private readonly client: Client = new Client({
         webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
         reconnectDelay: 5000,
@@ -32,9 +32,14 @@ export class WebSocketService {
     // Send a message to the WebSocket server
     public sendMessage(message: MyWebsocketMessage): void {
         if (this.client.connected) {
+            const body: string = JSON.stringify(message);
             this.client.publish({
-                destination: '/app/hello',
-                body: JSON.stringify(message),
+                destination: '/websockets-app/greeting',
+                body: body,
+            });
+            this.client.publish({
+                destination: '/websockets-app/hello',
+                body: body,
             });
         } else {
             console.log('Not connected to WebSocket server');
@@ -46,10 +51,15 @@ export class WebSocketService {
     private onConnect(): void {
         console.log('Connected to WebSocket server');
         this.state.set(true);
-        this.client.subscribe('/topic/greetings', (message: IMessage) => {
+        this.client.subscribe('/user/queue/response-to-hello', (message: IMessage) => {
+            console.log('response-to-hello', message);
+            const data: MyWebsocketMessage = JSON.parse(message.body);
+            this.join.set(data);
+        });
+        this.client.subscribe('/topic/join', (message: IMessage) => {
             console.log('greeting', message);
             const data: MyWebsocketMessage = JSON.parse(message.body);
-            this.greeting.set(data);
+            this.join.set(data);
         });
         this.client.subscribe('/topic/broadcast', (message: IMessage) => {
             console.log('broadcast', message);

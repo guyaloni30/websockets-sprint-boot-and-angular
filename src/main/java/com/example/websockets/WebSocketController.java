@@ -9,6 +9,7 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessageType;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.ObjectUtils;
 
 @Controller
 @AllArgsConstructor
@@ -18,12 +19,18 @@ public class WebSocketController {
     @MessageMapping(Consts.REQUEST_GREETING)
     @SendTo(Consts.TOPIC_PREFIX + Consts.TOPIC_JOIN)
     public MyWebsocketMessage greeting(MyWebsocketMessage msg, SimpMessageHeaderAccessor headerAccessor) {
+        if (ObjectUtils.isEmpty(msg.sessionId())) {
+            msg = new MyWebsocketMessage(headerAccessor.getSessionId(), msg.id(), msg.text());
+        }
         System.out.println("greeting " + msg);
         return new MyWebsocketMessage(headerAccessor.getSessionId(), msg.id(), "Greeting to " + msg.text() + " who joined the party");
     }
 
     @MessageMapping(Consts.REQUEST_HELLO)
     public void hello(MyWebsocketMessage msg, SimpMessageHeaderAccessor headerAccessor) {
+        if (ObjectUtils.isEmpty(msg.sessionId())) {
+            msg = new MyWebsocketMessage(headerAccessor.getSessionId(), msg.id(), msg.text());
+        }
         System.out.println("hello " + msg);
         String sessionId = headerAccessor.getSessionId();
         messagingTemplate.convertAndSendToUser(
