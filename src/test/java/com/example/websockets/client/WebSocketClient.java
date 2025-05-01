@@ -1,5 +1,7 @@
-package com.example.websockets;
+package com.example.websockets.client;
 
+import com.example.websockets.Consts;
+import com.example.websockets.messages.MyWebsocketMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.stomp.*;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
@@ -49,8 +51,8 @@ public class WebSocketClient {
             return;
         }
         if (isConnected()) {
-            session.send("/websockets-app/greeting", new MyWebsocketMessage(session.getSessionId(), id, message));
-            session.send("/websockets-app/hello", new MyWebsocketMessage(session.getSessionId(), id, message));
+            session.send(Consts.WEBSOCKETS_APP + Consts.REQUEST_GREETING, new MyWebsocketMessage(session.getSessionId(), id, message));
+            session.send(Consts.WEBSOCKETS_APP + Consts.REQUEST_HELLO, new MyWebsocketMessage(session.getSessionId(), id, message));
         } else {
             System.out.println("Not connected. Attempting to reconnect...");
             connect();
@@ -85,9 +87,9 @@ public class WebSocketClient {
         @Override
         public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
             System.out.println("Connected to WebSocket server");
-            subscribe(session, "/topic/greeting", "greeting");
-            subscribe(session, "/topic/broadcast", "broadcast");
-            subscribe(session, "/user/queue/hello", "hello");
+            subscribe(session, Consts.TOPIC_PREFIX + Consts.TOPIC_BROADCAST, "broadcast");
+            subscribe(session, Consts.TOPIC_PREFIX + Consts.TOPIC_JOIN, "greeting");
+            subscribe(session, Consts.REPLY_PREFIX + Consts.QUEUE_PREFIX + Consts.RESPONSE_TO_HELLO, "hello");
         }
 
         private void subscribe(StompSession session, String destination, String type) {

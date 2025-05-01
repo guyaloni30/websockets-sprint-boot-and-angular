@@ -1,5 +1,6 @@
-package com.example.websockets;
+package com.example.websockets.client;
 
+import com.example.websockets.messages.MyWebsocketMessage;
 import lombok.AllArgsConstructor;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;

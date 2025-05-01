@@ -19,9 +19,9 @@ import java.util.List;
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.setApplicationDestinationPrefixes("/websockets-app");
-        config.enableSimpleBroker("/topic", "/queue");
-        config.setUserDestinationPrefix("/user");//That's the default
+        config.setApplicationDestinationPrefixes(Consts.WEBSOCKETS_APP);
+        config.enableSimpleBroker(Consts.TOPIC_PREFIX, Consts.QUEUE_PREFIX);
+        config.setUserDestinationPrefix(Consts.REPLY_PREFIX);//That's the default
     }
 
     @Override

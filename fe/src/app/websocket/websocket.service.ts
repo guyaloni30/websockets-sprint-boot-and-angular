@@ -7,7 +7,7 @@ import SockJS from 'sockjs-client';
 })
 export class WebSocketService {
     public readonly state = signal<boolean>(false);
-    public readonly broadcast = signal<MyWebsocketMessage>({id: 0, text: ''});
+    public readonly broadcast = signal<MyWebsocketMessage>({sessionId: '', id: 0, text: ''});
     public readonly greeting = signal<MyWebsocketMessage | null>(null);
     private readonly client: Client = new Client({
         webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
@@ -71,6 +71,7 @@ export class WebSocketService {
 }
 
 export interface MyWebsocketMessage {
+    sessionId: string;
     id: number;
     text: string;
 }

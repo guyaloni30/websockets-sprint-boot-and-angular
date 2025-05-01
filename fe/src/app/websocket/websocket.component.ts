@@ -48,6 +48,7 @@ export class WebsocketComponent implements OnInit, OnDestroy {
         const text = this.newMessage();
         if (text && (text.trim() !== '')) {
             this.webSocketService.sendMessage({
+                sessionId: '',
                 id: 0,
                 text,
             });

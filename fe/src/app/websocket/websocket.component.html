@@ -20,17 +20,25 @@
         <div class="response-container">
             <div class="greeting">
                 <h4>{{ greetings().length }} Greetings:</h4>
-                <ul>
+                <table>
                     @for (greeting of greetings(); track $index) {
-                        <li>{{ greeting.id }}: {{ greeting.text }}</li>
+                        <tr>
+                            <td>{{ greeting.id }}</td>
+                            <td>{{ greeting.sessionId }}</td>
+                            <td>{{ greeting.text }}</td>
+                        </tr>
                     }
-                </ul>
+                </table>
             </div>
-
             <div class="timestamp">
                 <h4>Latest broadcast:</h4>
-                <p>{{ lastBroadcast().id }}</p>
-                <p>{{ lastBroadcast().text }}</p>
+                <table>
+                    <tr>
+                        <td>{{ lastBroadcast().id }}</td>
+                        <td>{{ lastBroadcast().sessionId }}</td>
+                        <td>{{ lastBroadcast().text }}</td>
+                    </tr>
+                </table>
             </div>
         </div>
     </div>

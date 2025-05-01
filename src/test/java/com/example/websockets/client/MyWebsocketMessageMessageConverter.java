@@ -1,5 +1,6 @@
-package com.example.websockets;
+package com.example.websockets.client;
 
+import com.example.websockets.messages.MyWebsocketMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.springframework.lang.Nullable;

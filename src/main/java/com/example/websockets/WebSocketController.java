@@ -1,5 +1,6 @@
 package com.example.websockets;
 
+import com.example.websockets.messages.MyWebsocketMessage;
 import lombok.AllArgsConstructor;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -14,20 +15,20 @@ import org.springframework.stereotype.Controller;
 public class WebSocketController {
     private final SimpMessagingTemplate messagingTemplate;
 
-    @MessageMapping("/greeting")
-    @SendTo("/topic/greeting")
+    @MessageMapping(Consts.REQUEST_GREETING)
+    @SendTo(Consts.TOPIC_PREFIX + Consts.TOPIC_JOIN)
     public MyWebsocketMessage greeting(MyWebsocketMessage msg, SimpMessageHeaderAccessor headerAccessor) {
         System.out.println("greeting " + msg);
         return new MyWebsocketMessage(headerAccessor.getSessionId(), msg.id(), "Greeting to " + msg.text() + " who joined the party");
     }
 
-    @MessageMapping("/hello")
+    @MessageMapping(Consts.REQUEST_HELLO)
     public void hello(MyWebsocketMessage msg, SimpMessageHeaderAccessor headerAccessor) {
         System.out.println("hello " + msg);
         String sessionId = headerAccessor.getSessionId();
         messagingTemplate.convertAndSendToUser(
                 sessionId,
-                "/queue/hello",
+                Consts.QUEUE_PREFIX + Consts.RESPONSE_TO_HELLO,
                 new MyWebsocketMessage(
                         sessionId,
                         msg.id(),

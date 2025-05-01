@@ -1,5 +1,6 @@
 package com.example.websockets;
 
+import com.example.websockets.messages.MyWebsocketMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
@@ -24,6 +25,6 @@ public class PeriodicBroadcastService {
     @Scheduled(fixedRate = 5000)
     public void sendTimestamp() {
         MyWebsocketMessage message = new MyWebsocketMessage(null, 1, "Periodic keepalive broadcast #" + id++);
-        messagingTemplate.convertAndSend("/topic/broadcast", message, headers);
+        messagingTemplate.convertAndSend(Consts.TOPIC_PREFIX + Consts.TOPIC_BROADCAST, message, headers);
     }
 }
