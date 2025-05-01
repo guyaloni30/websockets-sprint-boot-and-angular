@@ -23,7 +23,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // Messages with destination header starting with "/topic" will be routed to the broker
         config.enableSimpleBroker("/topic");
         // Messages with destination header starting with "/app" will be routed to @MessageMapping methods
-        config.setApplicationDestinationPrefixes("/app");
+        config.setApplicationDestinationPrefixes(Consts.WEBSOCKETS_APP_BASE_URI);
     }
 
     @Override

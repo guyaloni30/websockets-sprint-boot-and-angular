@@ -22,21 +22,21 @@ public class WebSocketClient {
 
     public void run() {
         // Keep sending messages until user types 'exit'
-        Scanner scanner = new Scanner(System.in);
-        connect();
-        running = true;
-        while (running) {
-            try {
-                System.out.println("Enter message (or 'exit' to quit):");
-                String message = scanner.nextLine();
-                handleMessage(message);
-            } catch (Exception e) {
-                System.out.println("Error: " + e.getMessage());
-                System.out.println("Attempting to reconnect...");
-                connect();
+        try (Scanner scanner = new Scanner(System.in)) {
+            connect();
+            running = true;
+            while (running) {
+                try {
+                    System.out.println("Enter message (or 'exit' to quit):");
+                    String message = scanner.nextLine();
+                    handleMessage(message);
+                } catch (Exception e) {
+                    System.out.println("Error: " + e.getMessage());
+                    System.out.println("Attempting to reconnect...");
+                    connect();
+                }
             }
         }
-        scanner.close();
     }
 
     private void handleMessage(String message) {
@@ -49,7 +49,7 @@ public class WebSocketClient {
             return;
         }
         if (isConnected()) {
-            session.send("/app/hello", new MyWebsocketMessage(id, message));
+            session.send(Consts.WEBSOCKETS_APP_BASE_URI + Consts.HELLO_URI, new MyWebsocketMessage(id, message));
         } else {
             System.out.println("Not connected. Attempting to reconnect...");
             connect();
@@ -84,9 +84,9 @@ public class WebSocketClient {
         public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
             System.out.println("Connected to WebSocket server");
             // Subscribe to the greeting topic
-            session.subscribe("/topic/greetings", new StompSessionHandlerAdapterImpl(1234, "greeting"));
+            session.subscribe(Consts.TOPIC_GREETINGS, new StompSessionHandlerAdapterImpl(1234, "greeting"));
             // Subscribe to the broadcast topic
-            session.subscribe("/topic/broadcast", new StompSessionHandlerAdapterImpl(1234, "broadcast"));
+            session.subscribe(Consts.TOPIC_BROADCAST, new StompSessionHandlerAdapterImpl(1234, "broadcast"));
         }
 
         @Override
