@@ -1,3 +1,5 @@
+periodic:
+  broadcast: false
 server:
   port: 8080
   jetty:

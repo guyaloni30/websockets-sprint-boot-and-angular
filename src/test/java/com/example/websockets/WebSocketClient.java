@@ -49,7 +49,8 @@ public class WebSocketClient {
             return;
         }
         if (isConnected()) {
-            session.send(Consts.WEBSOCKETS_APP_BASE_URI + Consts.HELLO_URI, new MyWebsocketMessage(id, message));
+            session.send("/websockets-app/greeting", new MyWebsocketMessage(session.getSessionId(), id, message));
+            session.send("/websockets-app/hello", new MyWebsocketMessage(session.getSessionId(), id, message));
         } else {
             System.out.println("Not connected. Attempting to reconnect...");
             connect();
@@ -69,6 +70,7 @@ public class WebSocketClient {
             stompClient.setMessageConverter(new MyWebsocketMessageMessageConverter());
             StompSessionHandler sessionHandler = new MyStompSessionHandler();
             session = stompClient.connectAsync(URL, sessionHandler).get();
+            System.out.println("Session ID: " + session.getSessionId());
         } catch (InterruptedException | ExecutionException e) {
             System.out.println("Failed to connect: " + e.getMessage());
             try {
@@ -83,10 +85,14 @@ public class WebSocketClient {
         @Override
         public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
             System.out.println("Connected to WebSocket server");
-            // Subscribe to the greeting topic
-            session.subscribe(Consts.TOPIC_GREETINGS, new StompSessionHandlerAdapterImpl(1234, "greeting"));
-            // Subscribe to the broadcast topic
-            session.subscribe(Consts.TOPIC_BROADCAST, new StompSessionHandlerAdapterImpl(1234, "broadcast"));
+            subscribe(session, "/topic/greeting", "greeting");
+            subscribe(session, "/topic/broadcast", "broadcast");
+            subscribe(session, "/user/queue/hello", "hello");
+        }
+
+        private void subscribe(StompSession session, String destination, String type) {
+            System.out.println("Subscribing to " + destination);
+            session.subscribe(destination, new MessageHandler(id, type));
         }
 
         @Override

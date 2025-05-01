@@ -1,6 +1,7 @@
 package com.example.websockets;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Map;
 
+@ConditionalOnProperty(name = "periodic.broadcast", havingValue = "true")
 @Service
 @EnableScheduling
 @RequiredArgsConstructor
@@ -21,7 +23,7 @@ public class PeriodicBroadcastService {
 
     @Scheduled(fixedRate = 5000)
     public void sendTimestamp() {
-        MyWebsocketMessage message = new MyWebsocketMessage(-1, "Periodic keepalive broadcast #" + id++);
-        messagingTemplate.convertAndSend(Consts.TOPIC_BROADCAST, message, headers);
+        MyWebsocketMessage message = new MyWebsocketMessage(null, 1, "Periodic keepalive broadcast #" + id++);
+        messagingTemplate.convertAndSend("/topic/broadcast", message, headers);
     }
 }

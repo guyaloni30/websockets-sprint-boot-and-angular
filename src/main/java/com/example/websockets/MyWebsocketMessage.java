@@ -1,4 +1,4 @@
 package com.example.websockets;
 
-public record MyWebsocketMessage(int id, String text) {
+public record MyWebsocketMessage(String sessionId, int id, String text) {
 }

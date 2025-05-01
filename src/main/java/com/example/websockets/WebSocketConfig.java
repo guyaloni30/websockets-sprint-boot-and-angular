@@ -19,17 +19,14 @@ import java.util.List;
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Enable a simple in-memory message broker to send messages to clients
-        // Messages with destination header starting with "/topic" will be routed to the broker
-        config.enableSimpleBroker("/topic");
-        // Messages with destination header starting with "/app" will be routed to @MessageMapping methods
-        config.setApplicationDestinationPrefixes(Consts.WEBSOCKETS_APP_BASE_URI);
+        config.setApplicationDestinationPrefixes("/websockets-app");
+        config.enableSimpleBroker("/topic", "/queue");
+        config.setUserDestinationPrefix("/user");//That's the default
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Register the "/ws" endpoint, enabling SockJS fallback options so that
-        // alternative messaging options may be used if WebSocket is not available
+        // Register the "/ws" endpoint, enabling SockJS fallback options so that alternative messaging options may be used if WebSocket is not available
         registry
                 .addEndpoint("/ws")
                 .setAllowedOriginPatterns("*") // For development; restrict this in production
@@ -38,13 +35,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public boolean configureMessageConverters(List<MessageConverter> messageConverters) {
-        // Configure JSON as the default content type
         DefaultContentTypeResolver resolver = createResolver();
-        // Create and configure Jackson converter
         MappingJackson2MessageConverter converter = createConverter(resolver);
-        // Add to converters list
         messageConverters.add(converter);
-        // Return true to indicate we've configured our own converters
         return true;
     }
 

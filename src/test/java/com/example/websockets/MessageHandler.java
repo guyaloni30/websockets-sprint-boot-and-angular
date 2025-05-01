@@ -7,7 +7,7 @@ import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import java.lang.reflect.Type;
 
 @AllArgsConstructor
-public class StompSessionHandlerAdapterImpl extends StompSessionHandlerAdapter {
+public class MessageHandler extends StompSessionHandlerAdapter {
     private final int id;
     private final String type;
 
