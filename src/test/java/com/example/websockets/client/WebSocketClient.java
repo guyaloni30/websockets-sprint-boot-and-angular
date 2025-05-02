@@ -74,7 +74,8 @@ public class WebSocketClient {
             WebSocketTransport transport = new WebSocketTransport(webSocketClient);
             SockJsClient sockJsClient = new SockJsClient(List.of(transport));
             WebSocketStompClient stompClient = new WebSocketStompClient(sockJsClient);
-            stompClient.setMessageConverter(new CompositeMessageConverter(List.of(new MappingJackson2MessageConverter())));
+            MappingJackson2MessageConverter mappingJackson2MessageConverter = new MappingJackson2MessageConverter();
+            stompClient.setMessageConverter(new CompositeMessageConverter(List.of(mappingJackson2MessageConverter)));
             StompSessionHandler sessionHandler = new MyStompSessionHandler();
             session = stompClient.connectAsync(URL, sessionHandler).get();
             System.out.println("Session ID: " + session.getSessionId());
@@ -97,7 +98,7 @@ public class WebSocketClient {
             subscribe(session, Consts.REPLY_PREFIX + Consts.QUEUE_PREFIX + Consts.RESPONSE_TO_HELLO, new GenericMessageAdapter<>(MyWebsocketMessage.class, response -> System.out.println(id + ": Received hello: " + response)));
         }
 
-        private void subscribe(StompSession session, String destination, StompSessionHandlerAdapter adapter) {
+        private static void subscribe(StompSession session, String destination, StompSessionHandlerAdapter adapter) {
             System.out.println("Subscribing to " + destination);
             session.subscribe(destination, adapter);
         }
