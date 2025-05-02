@@ -1,6 +1,5 @@
 package com.example.websockets.client;
 
-import com.example.websockets.Consts;
 import com.example.websockets.messages.KeepaliveBroadcast;
 import com.example.websockets.messages.MyWebsocketMessage;
 import lombok.RequiredArgsConstructor;
@@ -16,26 +15,27 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
 
+import static com.example.websockets.Consts.*;
+
 @RequiredArgsConstructor
 public class WebSocketClient {
     private static final String URL = "ws://localhost:8080/ws";
+    private static final boolean reconnectAutomatically = false;
 
     private final int id;
 
-    private boolean running;
     private StompSession session;
 
     public void run() {
         // Keep sending messages until user types 'exit'
         try (Scanner scanner = new Scanner(System.in)) {
             connect();
-            running = true;
-            while (running) {
+            while (true) {
                 try {
-                    System.out.println("Enter message (or 'exit' to quit):");
-                    String message = scanner.nextLine().trim();
-                    if (!message.isEmpty()) {
-                        handleMessage(message);
+                    System.out.println("Enter command (or 'exit' to quit):");
+                    String command = scanner.nextLine().trim();
+                    if (!command.isEmpty()) {
+                        handleCommand(command);
                     }
                 } catch (Exception e) {
                     System.out.println("Error: " + e.getMessage());
@@ -46,22 +46,26 @@ public class WebSocketClient {
         }
     }
 
-    private void handleMessage(String message) {
-        if ("exit".equalsIgnoreCase(message)) {
-            running = false;
+    private void handleCommand(String command) {
+        if ("exit".equalsIgnoreCase(command)) {
             if (isConnected()) {
                 session.disconnect();
             }
             System.exit(-1);
             return;
         }
-        if (isConnected()) {
-            session.send(Consts.WEBSOCKETS_APP + Consts.REQUEST_GREETING, new MyWebsocketMessage(session.getSessionId(), id, message));
-            session.send(Consts.WEBSOCKETS_APP + Consts.REQUEST_HELLO, new MyWebsocketMessage(session.getSessionId(), id, message));
-        } else {
+        if ("disconnect".equalsIgnoreCase(command)) {
+            if (session.isConnected()) {
+                session.disconnect();
+            }
+            return;
+        }
+        if (!isConnected()) {
             System.out.println("Not connected. Attempting to reconnect...");
             connect();
         }
+        session.send(WEBSOCKETS_APP + REQUEST_GREETING, new MyWebsocketMessage(session.getSessionId(), id, command));
+        session.send(WEBSOCKETS_APP + REQUEST_HELLO, new MyWebsocketMessage(session.getSessionId(), id, command));
     }
 
     private boolean isConnected() {
@@ -70,12 +74,7 @@ public class WebSocketClient {
 
     private void connect() {
         try {
-            StandardWebSocketClient webSocketClient = new StandardWebSocketClient();
-            WebSocketTransport transport = new WebSocketTransport(webSocketClient);
-            SockJsClient sockJsClient = new SockJsClient(List.of(transport));
-            WebSocketStompClient stompClient = new WebSocketStompClient(sockJsClient);
-            MappingJackson2MessageConverter mappingJackson2MessageConverter = new MappingJackson2MessageConverter();
-            stompClient.setMessageConverter(new CompositeMessageConverter(List.of(mappingJackson2MessageConverter)));
+            WebSocketStompClient stompClient = getWebSocketStompClient();
             StompSessionHandler sessionHandler = new MyStompSessionHandler();
             session = stompClient.connectAsync(URL, sessionHandler).get();
             System.out.println("Session ID: " + session.getSessionId());
@@ -89,13 +88,23 @@ public class WebSocketClient {
         }
     }
 
+    private static WebSocketStompClient getWebSocketStompClient() {
+        StandardWebSocketClient webSocketClient = new StandardWebSocketClient();
+        WebSocketTransport transport = new WebSocketTransport(webSocketClient);
+        SockJsClient sockJsClient = new SockJsClient(List.of(transport));
+        WebSocketStompClient stompClient = new WebSocketStompClient(sockJsClient);
+        MappingJackson2MessageConverter mappingJackson2MessageConverter = new MappingJackson2MessageConverter();
+        stompClient.setMessageConverter(new CompositeMessageConverter(List.of(mappingJackson2MessageConverter)));
+        return stompClient;
+    }
+
     private class MyStompSessionHandler extends StompSessionHandlerAdapter {
         @Override
         public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
             System.out.println("Connected to WebSocket server");
-            subscribe(session, Consts.TOPIC_PREFIX + Consts.TOPIC_BROADCAST, new GenericMessageAdapter<>(KeepaliveBroadcast.class, b -> System.out.println("Keepalive " + b.time())));
-            subscribe(session, Consts.TOPIC_PREFIX + Consts.TOPIC_JOIN, new GenericMessageAdapter<>(MyWebsocketMessage.class, response -> System.out.println(id + ": Received greeting: " + response)));
-            subscribe(session, Consts.REPLY_PREFIX + Consts.QUEUE_PREFIX + Consts.RESPONSE_TO_HELLO, new GenericMessageAdapter<>(MyWebsocketMessage.class, response -> System.out.println(id + ": Received hello: " + response)));
+            subscribe(session, TOPIC_PREFIX + TOPIC_BROADCAST, new GenericMessageAdapter<>(KeepaliveBroadcast.class, b -> System.out.println("Keepalive " + b.time())));
+            subscribe(session, TOPIC_PREFIX + TOPIC_JOIN, new GenericMessageAdapter<>(MyWebsocketMessage.class, response -> System.out.println(id + ": Received greeting: " + response)));
+            subscribe(session, REPLY_PREFIX + QUEUE_PREFIX + RESPONSE_TO_HELLO, new GenericMessageAdapter<>(MyWebsocketMessage.class, response -> System.out.println(id + ": Received hello: " + response)));
         }
 
         private static void subscribe(StompSession session, String destination, StompSessionHandlerAdapter adapter) {
@@ -111,7 +120,7 @@ public class WebSocketClient {
         @Override
         public void handleTransportError(StompSession session, Throwable exception) {
             System.out.println("Transport error: " + exception.getMessage());
-            if (!session.isConnected()) {
+            if (reconnectAutomatically && !session.isConnected()) {
                 try {
                     Thread.sleep(5000); // Wait before trying to reconnect
                     connect();
