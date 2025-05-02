@@ -1,7 +1,6 @@
 package com.example.websockets.client;
 
-import com.example.websockets.messages.KeepaliveBroadcast;
-import com.example.websockets.messages.MyWebsocketMessage;
+import com.example.websockets.Messages;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.converter.CompositeMessageConverter;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
@@ -21,8 +20,6 @@ import static com.example.websockets.Consts.*;
 public class WebSocketClient {
     private static final String URL = "ws://localhost:8080/ws";
     private static final boolean reconnectAutomatically = false;
-
-    private final int id;
 
     private StompSession session;
 
@@ -64,8 +61,9 @@ public class WebSocketClient {
             System.out.println("Not connected. Attempting to reconnect...");
             connect();
         }
-        session.send(WEBSOCKETS_APP + REQUEST_GREETING, new MyWebsocketMessage(session.getSessionId(), id, command));
-        session.send(WEBSOCKETS_APP + REQUEST_HELLO, new MyWebsocketMessage(session.getSessionId(), id, command));
+        Messages.HelloRequest hello = new Messages.HelloRequest(command);
+        session.send(WEBSOCKETS_APP + REQUEST_GREETING, hello);
+        session.send(WEBSOCKETS_APP + REQUEST_HELLO, hello);
     }
 
     private boolean isConnected() {
@@ -77,7 +75,6 @@ public class WebSocketClient {
             WebSocketStompClient stompClient = getWebSocketStompClient();
             StompSessionHandler sessionHandler = new MyStompSessionHandler();
             session = stompClient.connectAsync(URL, sessionHandler).get();
-            System.out.println("Session ID: " + session.getSessionId());
         } catch (InterruptedException | ExecutionException e) {
             System.out.println("Failed to connect: " + e.getMessage());
             try {
@@ -101,10 +98,10 @@ public class WebSocketClient {
     private class MyStompSessionHandler extends StompSessionHandlerAdapter {
         @Override
         public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
-            System.out.println("Connected to WebSocket server");
-            subscribe(session, TOPIC_PREFIX + TOPIC_BROADCAST, new GenericMessageAdapter<>(KeepaliveBroadcast.class, b -> System.out.println("Keepalive " + b.time())));
-            subscribe(session, TOPIC_PREFIX + TOPIC_JOIN, new GenericMessageAdapter<>(MyWebsocketMessage.class, response -> System.out.println(id + ": Received greeting: " + response)));
-            subscribe(session, REPLY_PREFIX + QUEUE_PREFIX + RESPONSE_TO_HELLO, new GenericMessageAdapter<>(MyWebsocketMessage.class, response -> System.out.println(id + ": Received hello: " + response)));
+            System.out.println("Connected to WebSocket server with session ID: " + session.getSessionId());
+            subscribe(session, TOPIC_PREFIX + TOPIC_BROADCAST, new GenericMessageAdapter<>(Messages.KeepaliveBroadcast.class, b -> System.out.println("Keepalive " + b.time())));
+            subscribe(session, TOPIC_PREFIX + TOPIC_JOIN, new GenericMessageAdapter<>(Messages.JoinBroadcast.class, response -> System.out.println(response.sessionId() + ": Received greeting: " + response.text())));
+            subscribe(session, REPLY_PREFIX + QUEUE_PREFIX + RESPONSE_TO_HELLO, new GenericMessageAdapter<>(Messages.HelloResponse.class, response -> System.out.println(response.sessionId() + ": Received hello: " + response.text())));
         }
 
         private static void subscribe(StompSession session, String destination, StompSessionHandlerAdapter adapter) {

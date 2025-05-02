@@ -1,7 +1,7 @@
 import {Component, computed, model, OnDestroy, OnInit, signal, Signal} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {MyWebsocketMessage, WebSocketService} from '../websockets-service/websocket.service';
+import {HelloResponse, JoinBroadcast, WebSocketService} from '../websockets-service/websocket.service';
 import {Subscription, tap} from 'rxjs';
 
 @Component({
@@ -46,11 +46,7 @@ export class WebsocketComponent implements OnInit, OnDestroy {
     sendMessage(): void {
         const text = this.newMessage();
         if (text && (text.trim() !== '')) {
-            this.webSocketService.sendMessage({
-                sessionId: '',
-                id: 0,
-                text,
-            });
+            this.webSocketService.sendMessage({text,});
             this.newMessage.set('');
         }
     }
@@ -73,13 +69,11 @@ class Keepalive {
 class Msg {
     public readonly when: Date;
     public readonly sessionId: string;
-    public readonly id: number;
     public readonly text: string;
 
-    constructor(m: MyWebsocketMessage) {
+    constructor(m: HelloResponse | JoinBroadcast) {
         this.when = new Date();
         this.sessionId = m.sessionId;
-        this.id = m.id;
         this.text = m.text;
     }
 }

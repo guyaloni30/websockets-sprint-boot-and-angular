@@ -23,7 +23,6 @@
                 @for (greeting of greetings(); track $index) {
                     <tr>
                         <td>{{ greeting.when | date :'medium' }}</td>
-                        <td>{{ greeting.id }}</td>
                         <td>{{ greeting.sessionId }}</td>
                         <td>{{ greeting.text }}</td>
                     </tr>

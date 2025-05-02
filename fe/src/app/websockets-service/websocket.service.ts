@@ -8,8 +8,8 @@ import {Subject} from 'rxjs';
 })
 export class WebSocketService {
     public readonly state = signal<boolean>(false);
-    public readonly broadcast = signal<Keepalive>({time: 0});
-    public readonly join: Subject<MyWebsocketMessage> = new Subject<MyWebsocketMessage>();
+    public readonly broadcast = signal<KeepaliveBroadcast>({time: 0});
+    public readonly join: Subject<HelloResponse | JoinBroadcast> = new Subject<HelloResponse | JoinBroadcast>();
     private readonly client: Client = new Client({
         webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
         reconnectDelay: 5000,
@@ -28,12 +28,12 @@ export class WebSocketService {
         this.client.deactivate();
     }
 
-    public sendMessage(message: MyWebsocketMessage): void {
+    public sendMessage(message: HelloRequest): void {
         this.send('greeting', message);
         this.send('hello', message);
     }
 
-    private send(destination: string, message: MyWebsocketMessage): void {
+    private send(destination: string, message: HelloRequest): void {
         if (this.client.connected) {
             this.client.publish({
                 destination: `/websockets-app/${destination}`,
@@ -55,9 +55,9 @@ export class WebSocketService {
     /**
      * In this case we're handling messages of hte same type, so there's one message
      */
-    private onMessage(type: string, message: IMessage, destination: Subject<MyWebsocketMessage>): void {
+    private onMessage(type: string, message: IMessage, destination: Subject<HelloResponse | JoinBroadcast>): void {
         console.log(type, message.body);
-        const data: MyWebsocketMessage = JSON.parse(message.body);
+        const data: HelloResponse | JoinBroadcast = JSON.parse(message.body);
         destination.next(data);
     }
 
@@ -73,12 +73,20 @@ export class WebSocketService {
     }
 }
 
-export interface Keepalive {
-    time: number;
+export interface HelloRequest {
+    text: string;
 }
 
-export interface MyWebsocketMessage {
+export interface HelloResponse {
     sessionId: string;
-    id: number;
     text: string;
+}
+
+export interface JoinBroadcast {
+    sessionId: string;
+    text: string;
+}
+
+export interface KeepaliveBroadcast {
+    time: number
 }
