@@ -1,7 +1,8 @@
-import {Component, computed, effect, model, OnDestroy, OnInit, signal, Signal} from '@angular/core';
+import {Component, computed, model, OnDestroy, OnInit, signal, Signal} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {MyWebsocketMessage, WebSocketService} from './websocket.service';
+import {MyWebsocketMessage, WebSocketService} from '../websockets-service/websocket.service';
+import {Subscription, tap} from 'rxjs';
 
 @Component({
     selector: 'app-websocket',
@@ -12,38 +13,36 @@ import {MyWebsocketMessage, WebSocketService} from './websocket.service';
 export class WebsocketComponent implements OnInit, OnDestroy {
     readonly newMessage = model<string>('');
     readonly isConnected: Signal<boolean>;
-    readonly lastBroadcast: Signal<MyWebsocketMessage>;
-    readonly greetings = signal<MyWebsocketMessage[]>([]);
+    readonly lastBroadcast: Signal<Msg>;
+    readonly greetings = signal<Msg[]>([]);
+    readonly message$: Subscription;
 
     constructor(private readonly webSocketService: WebSocketService) {
         this.isConnected = computed<boolean>(() => this.webSocketService.state());
-        this.lastBroadcast = computed(() => this.webSocketService.broadcast());
-        effect(() => {
-            const greeting: MyWebsocketMessage | null = this.webSocketService.join();
-            if (greeting) {
+        this.lastBroadcast = computed(() => new Msg(this.webSocketService.broadcast()));
+        this.message$ = this.webSocketService.join.asObservable()
+            .pipe(tap(greeting => {
                 this.greetings.update(currentList => {
                     currentList = [...currentList];
-                    currentList.unshift(greeting);
+                    currentList.unshift(new Msg(greeting));
                     if (currentList.length > 10) {
                         currentList.pop();
                     }
                     return currentList;
                 });
-            }
-        });
+            }))
+            .subscribe();
     }
 
     ngOnInit(): void {
-        // Auto-connect on component init
         this.webSocketService.connect();
     }
 
     ngOnDestroy(): void {
-        // Disconnect from WebSocket server when component is destroyed
+        this.message$.unsubscribe();
         this.webSocketService.disconnect();
     }
 
-    // Send message to WebSocket server
     sendMessage(): void {
         const text = this.newMessage();
         if (text && (text.trim() !== '')) {
@@ -56,12 +55,25 @@ export class WebsocketComponent implements OnInit, OnDestroy {
         }
     }
 
-    // Toggle connection state
     handleConnectionToggle(): void {
         if (this.isConnected()) {
             this.webSocketService.disconnect();
         } else {
             this.webSocketService.connect();
         }
+    }
+}
+
+class Msg {
+    public readonly when: Date;
+    public readonly sessionId: string;
+    public readonly id: number;
+    public readonly text: string;
+
+    constructor(m: MyWebsocketMessage) {
+        this.when = new Date();
+        this.sessionId = m.sessionId;
+        this.id = m.id;
+        this.text = m.text;
     }
 }

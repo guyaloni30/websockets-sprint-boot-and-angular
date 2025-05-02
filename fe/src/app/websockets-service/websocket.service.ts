@@ -1,14 +1,15 @@
-import {Injectable, signal, WritableSignal} from '@angular/core';
+import {Injectable, signal} from '@angular/core';
 import {Client, IFrame, IMessage} from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import {Subject} from 'rxjs';
 
 @Injectable({
     providedIn: 'root',
 })
 export class WebSocketService {
     public readonly state = signal<boolean>(false);
-    public readonly broadcast = signal<MyWebsocketMessage>({sessionId: '', id: 0, text: ''});
-    public readonly join = signal<MyWebsocketMessage | null>(null);
+    public readonly broadcast = signal<MyWebsocketMessage>({id: 0, text: '', sessionId: ''});
+    public readonly join: Subject<MyWebsocketMessage> = new Subject<MyWebsocketMessage>();
     private readonly client: Client = new Client({
         webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
         reconnectDelay: 5000,
@@ -48,16 +49,16 @@ export class WebSocketService {
         this.state.set(true);
         this.client.subscribe('/user/queue/response-to-hello', message => this.onMessage('response-to-hello', message, this.join));
         this.client.subscribe('/topic/join', message => this.onMessage('greeting', message, this.join));
-        this.client.subscribe('/topic/broadcast', message => this.onMessage('broadcast', message, this.broadcast));
+        this.client.subscribe('/topic/broadcast', message => this.broadcast.set(JSON.parse(message.body)));
     }
 
     /**
      * In this case we're handling messages of hte same type, so there's one message
      */
-    private onMessage(type: string, message: IMessage, destination: WritableSignal<MyWebsocketMessage | null>): void {
+    private onMessage(type: string, message: IMessage, destination: Subject<MyWebsocketMessage>): void {
         console.log(type, message.body);
         const data: MyWebsocketMessage = JSON.parse(message.body);
-        destination.set(data);
+        destination.next(data);
     }
 
     // Handle disconnect event

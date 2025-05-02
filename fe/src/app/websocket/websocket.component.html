@@ -1,45 +1,45 @@
-<div class="container">
-    <h2>WebSocket Demo</h2>
-    <div class="status-container">
-        <div [class]="isConnected() ? 'connected' : 'disconnected'">
-            {{ isConnected() ? 'Connected' : 'Disconnected' }}
-        </div>
-        <button (click)="handleConnectionToggle()">{{ isConnected() ? 'Disconnect' : 'Connect' }}</button>
+<h2>WebSocket Demo</h2>
+<div class="status-container">
+    <div [class]="isConnected() ? 'connected' : 'disconnected'">
+        {{ isConnected() ? 'Connected' : 'Disconnected' }}
     </div>
+    <button (click)="handleConnectionToggle()">{{ isConnected() ? 'Disconnect' : 'Connect' }}</button>
+</div>
 
-    <div class="message-container">
-        <input placeholder="Enter message..."
-               [disabled]="!isConnected()"
-               [(ngModel)]="newMessage"
-               (keyup.enter)="sendMessage()">
-        <button (click)="sendMessage()" [disabled]="!isConnected()">Send</button>
-    </div>
+<div class="message-container">
+    <input placeholder="Enter message..."
+           [disabled]="!isConnected()"
+           [(ngModel)]="newMessage"
+           (keyup.enter)="sendMessage()">
+    <button (click)="sendMessage()" [disabled]="!isConnected()">Send</button>
+</div>
 
-    <div class="responses">
-        <h3>Responses</h3>
-        <div class="response-container">
-            <div class="greeting">
-                <h4>{{ greetings().length }} Greetings:</h4>
-                <table>
-                    @for (greeting of greetings(); track $index) {
-                        <tr>
-                            <td>{{ greeting.id }}</td>
-                            <td>{{ greeting.sessionId }}</td>
-                            <td>{{ greeting.text }}</td>
-                        </tr>
-                    }
-                </table>
-            </div>
-            <div class="timestamp">
-                <h4>Latest broadcast:</h4>
-                <table>
+<div class="responses">
+    <h3>Responses</h3>
+    <div class="response-container">
+        <div class="greeting">
+            <h4>{{ greetings().length }} Greetings:</h4>
+            <table>
+                @for (greeting of greetings(); track $index) {
                     <tr>
-                        <td>{{ lastBroadcast().id }}</td>
-                        <td>{{ lastBroadcast().sessionId }}</td>
-                        <td>{{ lastBroadcast().text }}</td>
+                        <td>{{ greeting.when | date :'medium' }}</td>
+                        <td>{{ greeting.id }}</td>
+                        <td>{{ greeting.sessionId }}</td>
+                        <td>{{ greeting.text }}</td>
                     </tr>
-                </table>
-            </div>
+                }
+            </table>
+        </div>
+        <div class="timestamp">
+            <h4>Latest broadcast:</h4>
+            <table>
+                <tr>
+                    <td>{{ lastBroadcast().when | date :'medium' }}</td>
+                    <td>{{ lastBroadcast().id }}</td>
+                    <td>{{ lastBroadcast().sessionId }}</td>
+                    <td>{{ lastBroadcast().text }}</td>
+                </tr>
+            </table>
         </div>
     </div>
 </div>
