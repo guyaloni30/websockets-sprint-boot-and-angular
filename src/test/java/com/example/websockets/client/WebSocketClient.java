@@ -1,8 +1,11 @@
 package com.example.websockets.client;
 
 import com.example.websockets.Consts;
+import com.example.websockets.messages.KeepaliveBroadcast;
 import com.example.websockets.messages.MyWebsocketMessage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.converter.CompositeMessageConverter;
+import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.simp.stomp.*;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
@@ -32,7 +35,6 @@ public class WebSocketClient {
                     System.out.println("Enter message (or 'exit' to quit):");
                     String message = scanner.nextLine().trim();
                     if (!message.isEmpty()) {
-
                         handleMessage(message);
                     }
                 } catch (Exception e) {
@@ -72,7 +74,7 @@ public class WebSocketClient {
             WebSocketTransport transport = new WebSocketTransport(webSocketClient);
             SockJsClient sockJsClient = new SockJsClient(List.of(transport));
             WebSocketStompClient stompClient = new WebSocketStompClient(sockJsClient);
-            stompClient.setMessageConverter(new MyWebsocketMessageMessageConverter());
+            stompClient.setMessageConverter(new CompositeMessageConverter(List.of(new MappingJackson2MessageConverter())));
             StompSessionHandler sessionHandler = new MyStompSessionHandler();
             session = stompClient.connectAsync(URL, sessionHandler).get();
             System.out.println("Session ID: " + session.getSessionId());
@@ -90,14 +92,14 @@ public class WebSocketClient {
         @Override
         public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
             System.out.println("Connected to WebSocket server");
-            subscribe(session, Consts.TOPIC_PREFIX + Consts.TOPIC_BROADCAST, "broadcast");
-            subscribe(session, Consts.TOPIC_PREFIX + Consts.TOPIC_JOIN, "greeting");
-            subscribe(session, Consts.REPLY_PREFIX + Consts.QUEUE_PREFIX + Consts.RESPONSE_TO_HELLO, "hello");
+            subscribe(session, Consts.TOPIC_PREFIX + Consts.TOPIC_BROADCAST, new GenericMessageAdapter<>(KeepaliveBroadcast.class, b -> System.out.println("Keepalive " + b.time())));
+            subscribe(session, Consts.TOPIC_PREFIX + Consts.TOPIC_JOIN, new GenericMessageAdapter<>(MyWebsocketMessage.class, response -> System.out.println(id + ": Received greeting: " + response)));
+            subscribe(session, Consts.REPLY_PREFIX + Consts.QUEUE_PREFIX + Consts.RESPONSE_TO_HELLO, new GenericMessageAdapter<>(MyWebsocketMessage.class, response -> System.out.println(id + ": Received hello: " + response)));
         }
 
-        private void subscribe(StompSession session, String destination, String type) {
+        private void subscribe(StompSession session, String destination, StompSessionHandlerAdapter adapter) {
             System.out.println("Subscribing to " + destination);
-            session.subscribe(destination, new MessageHandler(id, type));
+            session.subscribe(destination, adapter);
         }
 
         @Override

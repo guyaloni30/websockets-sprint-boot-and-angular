@@ -13,13 +13,13 @@ import {Subscription, tap} from 'rxjs';
 export class WebsocketComponent implements OnInit, OnDestroy {
     readonly newMessage = model<string>('');
     readonly isConnected: Signal<boolean>;
-    readonly lastBroadcast: Signal<Msg>;
+    readonly lastBroadcast: Signal<Keepalive>;
     readonly greetings = signal<Msg[]>([]);
     readonly message$: Subscription;
 
     constructor(private readonly webSocketService: WebSocketService) {
         this.isConnected = computed<boolean>(() => this.webSocketService.state());
-        this.lastBroadcast = computed(() => new Msg(this.webSocketService.broadcast()));
+        this.lastBroadcast = computed(() => new Keepalive(new Date(), this.webSocketService.broadcast().time));
         this.message$ = this.webSocketService.join.asObservable()
             .pipe(tap(greeting => {
                 this.greetings.update(currentList => {
@@ -61,6 +61,12 @@ export class WebsocketComponent implements OnInit, OnDestroy {
         } else {
             this.webSocketService.connect();
         }
+    }
+}
+
+class Keepalive {
+    constructor(public readonly when: Date,
+                public readonly time: number) {
     }
 }
 

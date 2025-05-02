@@ -8,7 +8,7 @@ import {Subject} from 'rxjs';
 })
 export class WebSocketService {
     public readonly state = signal<boolean>(false);
-    public readonly broadcast = signal<MyWebsocketMessage>({id: 0, text: '', sessionId: ''});
+    public readonly broadcast = signal<Keepalive>({time: 0});
     public readonly join: Subject<MyWebsocketMessage> = new Subject<MyWebsocketMessage>();
     private readonly client: Client = new Client({
         webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
@@ -71,6 +71,10 @@ export class WebSocketService {
     private onStompError(frame: IFrame): void {
         console.error('STOMP error', frame);
     }
+}
+
+export interface Keepalive {
+    time: number;
 }
 
 export interface MyWebsocketMessage {
