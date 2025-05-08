@@ -17,13 +17,13 @@ public class WebSocketController {
     @MessageMapping(Consts.REQUEST_GREETING)
     @SendTo(Consts.TOPIC_PREFIX + Consts.TOPIC_JOIN)
     public Messages.JoinBroadcast greeting(Messages.HelloRequest msg, SimpMessageHeaderAccessor headerAccessor) {
-        System.out.println("greeting " + msg);
+        //System.out.println("greeting " + msg);
         return new Messages.JoinBroadcast(headerAccessor.getSessionId(), "Greeting to " + msg.text() + " who joined the party");
     }
 
     @MessageMapping(Consts.REQUEST_HELLO)
     public void hello(Messages.HelloRequest msg, SimpMessageHeaderAccessor headerAccessor) {
-        System.out.println("hello " + msg);
+        //System.out.println("hello " + msg);
         String sessionId = headerAccessor.getSessionId();
         messagingTemplate.convertAndSendToUser(
                 sessionId,

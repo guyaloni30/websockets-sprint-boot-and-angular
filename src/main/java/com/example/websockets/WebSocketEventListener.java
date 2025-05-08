@@ -1,6 +1,7 @@
 package com.example.websockets;
 
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -17,52 +18,51 @@ import java.util.TreeSet;
 
 @Component
 @EnableScheduling
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class WebSocketEventListener {
     private final Set<String> sessions = Collections.synchronizedSet(new TreeSet<>());
 
     private final SimpMessageSendingOperations messagingTemplate;
 
-    @Scheduled(fixedRate = 5000)
+    private int lastSessions;
+
+    @Scheduled(fixedRate = 1000)
     public void print() {
-        System.out.println(sessions.size() + " concurrent sessions: " + sessions);
+        int current = sessions.size();
+        int diff = current - lastSessions;
+        String status = current + " concurrent sessions";
+        if (diff != 0) {
+            status += ", " + Math.abs(diff) + " " + ((diff > 0) ? "added" : "removed");
+        }
+        System.out.println(status);
+        lastSessions = sessions.size();
     }
 
     @EventListener
     public void handleWebSocketConnectListener(SessionConnectEvent event) {
         String sessionId = event.getMessage().getHeaders().get("simpSessionId", String.class);
-        System.out.println("Client connected: " + sessionId);
+//        System.out.println("Client connected: " + sessionId);
         sessions.add(sessionId);
-
-        // You can store connected clients in a map/database if needed
-        // connectedClients.put(sessionId, new ClientInfo(...));
     }
 
     @EventListener
     public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
         String sessionId = event.getSessionId();
-        System.out.println("Client disconnected: " + sessionId);
+//        System.out.println("Client disconnected: " + sessionId);
         sessions.remove(sessionId);
-
-        // Clean up any resources associated with this session
-        // connectedClients.remove(sessionId);
-
-        // You can also notify other users if needed
-//        messagingTemplate.convertAndSend("/topic/users/status",
-//                Map.of("sessionId", sessionId, "status", "offline"));
     }
 
     @EventListener
     public void handleSubscribeEvent(SessionSubscribeEvent event) {
         String sessionId = event.getMessage().getHeaders().get("simpSessionId", String.class);
         String destination = event.getMessage().getHeaders().get("simpDestination", String.class);
-        System.out.println("Client " + sessionId + " subscribed to " + destination);
+//        System.out.println("Client " + sessionId + " subscribed to " + destination);
     }
 
     @EventListener
     public void handleUnsubscribeEvent(SessionUnsubscribeEvent event) {
         String sessionId = event.getMessage().getHeaders().get("simpSessionId", String.class);
         String destination = event.getMessage().getHeaders().get("simpSubscriptionId", String.class);
-        System.out.println("Client " + sessionId + " unsubscribed from " + destination);
+//        System.out.println("Client " + sessionId + " unsubscribed from " + destination);
     }
 }
