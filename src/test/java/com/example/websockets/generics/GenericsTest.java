@@ -1,4 +1,4 @@
-package com.example.websockets.client;
+package com.example.websockets.generics;
 
 public class GenericsTest {
     public static void main(String[] args) throws ClassNotFoundException {

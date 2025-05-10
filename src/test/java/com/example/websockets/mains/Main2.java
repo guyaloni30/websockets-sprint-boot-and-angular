@@ -1,9 +1,12 @@
 package com.example.websockets.mains;
 
+import com.example.websockets.client.WebSocketClient;
+
 public class Main2 {
     public static void main(String[] args) {
-        try (MainClient c = new MainClient(2)) {
+        try (MainWebSocketClient c = new MainWebSocketClient(2)) {
             c.run();
         }
+        WebSocketClient.shutdown();
     }
 }

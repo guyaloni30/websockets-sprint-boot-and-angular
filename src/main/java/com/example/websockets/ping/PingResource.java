@@ -1,4 +1,4 @@
-package com.example.websockets;
+package com.example.websockets.ping;
 
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;

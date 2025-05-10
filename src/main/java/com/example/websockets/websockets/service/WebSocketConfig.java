@@ -1,5 +1,6 @@
-package com.example.websockets;
+package com.example.websockets.websockets.service;
 
+import com.example.websockets.websockets.Consts;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.converter.DefaultContentTypeResolver;

@@ -1,6 +1,5 @@
 package com.example.websockets.load;
 
-import com.example.websockets.Messages;
 import com.example.websockets.client.WebSocketClient;
 import lombok.RequiredArgsConstructor;
 
@@ -9,19 +8,21 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 @RequiredArgsConstructor
-public class WebSocketsLoadTest {
-    private final List<WebSocketClient> clients = IntStream.range(0, 100_000)
-            .mapToObj(index -> new WebSocketClient(index, "ws://localhost:8080/ws", false))
+public class LoadTestWithoutSleepInServer {
+    private final AtomicInteger receivedMessages = new AtomicInteger(0);
+    private final List<LoadWebSocketClient> clients = IntStream.range(0, 100)
+            .mapToObj(index -> new LoadWebSocketClient(receivedMessages, index))
             .toList();
 
     private final ExecutorService es;
 
     public static void main(String[] args) throws InterruptedException {
         try (ExecutorService es = Executors.newScheduledThreadPool(1000)) {
-            WebSocketsLoadTest loadTest = new WebSocketsLoadTest(es);
+            LoadTestWithoutSleepInServer loadTest = new LoadTestWithoutSleepInServer(es);
             loadTest.connectAll();
             loadTest.startAll();
             sleep(1000);//Let clients close
@@ -40,8 +41,8 @@ public class WebSocketsLoadTest {
                 countDownLatch.countDown();
             });
         });
-        while (!countDownLatch.await(100, TimeUnit.MILLISECONDS)) {
-            System.out.println("Connecting " + countDownLatch.getCount());
+        while (!countDownLatch.await(1, TimeUnit.SECONDS)) {
+            System.out.println("Connecting, " + countDownLatch.getCount() + " clients left");
         }
         System.out.println("Connected in " + (System.currentTimeMillis() - start) + " ms");
     }
@@ -50,17 +51,17 @@ public class WebSocketsLoadTest {
         CountDownLatch countDownLatch = new CountDownLatch(clients.size());
         long endTime = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10);
         clients.forEach(c -> es.submit(sendMessages(c, endTime, countDownLatch)));
-        while (!countDownLatch.await(100, TimeUnit.MILLISECONDS)) {
-            System.out.println("Running " + countDownLatch.getCount());
+        while (!countDownLatch.await(1, TimeUnit.SECONDS)) {
+            System.out.println("Running " + countDownLatch.getCount() + ", " + receivedMessages.get() + " messages received");
         }
     }
 
-    private Runnable sendMessages(WebSocketClient c, long endTime, CountDownLatch countDownLatch) {
+    private Runnable sendMessages(LoadWebSocketClient c, long endTime, CountDownLatch countDownLatch) {
         return () -> {
             try {
                 while (System.currentTimeMillis() < endTime) {
                     sleep(100);
-                    c.send(new Messages.HelloRequest("client" + c.getId()));
+                    c.send(0);
                 }
             } finally {
                 countDownLatch.countDown();

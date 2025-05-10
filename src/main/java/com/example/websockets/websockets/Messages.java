@@ -1,4 +1,4 @@
-package com.example.websockets;
+package com.example.websockets.websockets;
 
 public interface Messages {
     record HelloRequest(String text) {

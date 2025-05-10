@@ -1,6 +1,5 @@
-package com.example.websockets;
+package com.example.websockets.websockets.service;
 
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;

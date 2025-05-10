@@ -1,116 +1,148 @@
 package com.example.websockets.client;
 
-import com.example.websockets.Messages;
-import lombok.Getter;
+import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.converter.CompositeMessageConverter;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.simp.stomp.*;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 import org.springframework.web.socket.sockjs.client.SockJsClient;
 import org.springframework.web.socket.sockjs.client.WebSocketTransport;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.lang.reflect.Type;
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-
-import static com.example.websockets.Consts.*;
+import java.util.function.Consumer;
 
 @RequiredArgsConstructor
-public class WebSocketClient implements Closeable {
-    @Getter
-    private final int id;
-    private final String url;
-    private final boolean reconnectAutomatically;
+public abstract class WebSocketClient implements Closeable {
+    private static final SockJsClient sockJsClient;
+    private static final ThreadPoolTaskScheduler taskScheduler;
+    private static final WebSocketStompClient stompClient;
 
-    private StompSession session;
+    static {
+        StandardWebSocketClient webSocketClient = new StandardWebSocketClient();
+        WebSocketTransport transport = new WebSocketTransport(webSocketClient);
+        sockJsClient = new SockJsClient(List.of(transport));
+        taskScheduler = new ThreadPoolTaskScheduler();
+        taskScheduler.setPoolSize(1);
+        taskScheduler.setThreadNamePrefix("stomp-scheduler-");
+        taskScheduler.setDaemon(true); // Critical for allowing process exit
+        taskScheduler.initialize();
+        stompClient = new WebSocketStompClient(sockJsClient);
+        MappingJackson2MessageConverter mappingJackson2MessageConverter = new MappingJackson2MessageConverter();
+        stompClient.setMessageConverter(new CompositeMessageConverter(List.of(mappingJackson2MessageConverter)));
+        stompClient.setTaskScheduler(taskScheduler);
+    }
+
+    public static void shutdown() {
+        stompClient.stop();
+        sockJsClient.stop();
+        System.out.println(sockJsClient);
+        taskScheduler.shutdown();
+        Thread
+                .getAllStackTraces()
+                .keySet()
+                .stream()
+                .filter(t -> !t.isDaemon())
+                .filter(t -> !"main".equals(t.getName()))
+                .map(t -> "Non-daemon thread: " + t.getName() + " - State: " + t.getState() + " - ThreadGroup: " + ((t.getThreadGroup() != null) ? t.getThreadGroup().getName() : "-"))
+                .sorted()
+                .forEach(System.out::println);
+    }
+
+    private final List<StompSession.Subscription> subscriptions = new ArrayList<>();
+
+    private final URI uri;
+    private final String rootPath;
+
+    protected StompSession session;
 
     @Override
     public void close() {
         disconnect();
     }
 
-    public void handleCommand(String command) {
-        if (!isConnected()) {
-            System.out.println("Not connected. Attempting to reconnect...");
-            connect();
-        }
-        send(new Messages.HelloRequest(command));
+    public final void send(String destination, Object message) {
+        session.send(rootPath + destination, message);
     }
 
-    public void send(Messages.HelloRequest hello) {
-        session.send(WEBSOCKETS_APP + REQUEST_GREETING, hello);
-        session.send(WEBSOCKETS_APP + REQUEST_HELLO, hello);
-    }
-
-    public boolean isConnected() {
+    public final boolean isConnected() {
         return (session != null) && session.isConnected();
     }
 
-    public void connect() {
+    public final void connect() {
         if (isConnected()) {
             return;
         }
         try {
-            StompSessionHandler sessionHandler = new MyStompSessionHandler();
-            session = stompClient.connectAsync(url, sessionHandler).get();
+            CompletableFuture<StompSession> completableFuture = stompClient.connectAsync(uri, null, null, new MyStompSessionHandler());
+            session = completableFuture.get();
+            onConnect();
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException("Failed to connect: " + e.getMessage());
         }
     }
 
-    private static final WebSocketStompClient stompClient = getWebSocketStompClient();
-
-    private static WebSocketStompClient getWebSocketStompClient() {
-        StandardWebSocketClient webSocketClient = new StandardWebSocketClient();
-        WebSocketTransport transport = new WebSocketTransport(webSocketClient);
-        SockJsClient sockJsClient = new SockJsClient(List.of(transport));
-        WebSocketStompClient stompClient = new WebSocketStompClient(sockJsClient);
-        MappingJackson2MessageConverter mappingJackson2MessageConverter = new MappingJackson2MessageConverter();
-        stompClient.setMessageConverter(new CompositeMessageConverter(List.of(mappingJackson2MessageConverter)));
-        return stompClient;
+    protected void onConnect() {
     }
 
-    public void disconnect() {
+    public final void disconnect() {
+        subscriptions.forEach(StompSession.Subscription::unsubscribe);
+        subscriptions.clear();
         if (session != null) {
             try {
                 session.disconnect();
             } catch (Exception e) {
-                e.printStackTrace();
+                //Do nothing
             }
-            session = null;
+        }
+    }
+
+    protected <T> void subscribe(StompSession session, String destination, Class<T> messageType, Consumer<T> handler) {
+        subscriptions.add(session.subscribe(destination, new GenericMessageAdapter<>(messageType, handler)));
+    }
+
+    @AllArgsConstructor
+    private static class GenericMessageAdapter<T> extends StompSessionHandlerAdapter {
+        private final Class<T> messageType;
+        private final Consumer<T> handler;
+
+        @Override
+        public Type getPayloadType(StompHeaders headers) {
+            return messageType;
+        }
+
+        @Override
+        public void handleFrame(StompHeaders headers, Object payload) {
+            try {
+                handler.accept((T) payload);
+            } catch (ClassCastException e) {
+                throw new RuntimeException("Unknown keepalive message type " + payload.getClass().getName(), e);
+            }
         }
     }
 
     private class MyStompSessionHandler implements StompSessionHandler {
         @Override
         public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
-            System.out.println("Connected to WebSocket server with session ID: " + session.getSessionId());
-            subscribe(session, TOPIC_PREFIX + TOPIC_BROADCAST, new GenericMessageAdapter<>(Messages.KeepaliveBroadcast.class, b -> System.out.println("Keepalive " + b.time())));
-            subscribe(session, TOPIC_PREFIX + TOPIC_JOIN, new GenericMessageAdapter<>(Messages.JoinBroadcast.class, response -> System.out.println(response.sessionId() + ": Received greeting: " + response.text())));
-            subscribe(session, REPLY_PREFIX + QUEUE_PREFIX + RESPONSE_TO_HELLO, new GenericMessageAdapter<>(Messages.HelloResponse.class, response -> System.out.println(response.sessionId() + ": Received hello: " + response.text())));
+            WebSocketClient.this.afterConnected(session, connectedHeaders);
         }
 
         @Override
         public void handleException(StompSession session, StompCommand command, StompHeaders headers, byte[] payload, Throwable exception) {
-            System.out.println("Error: " + exception.getMessage());
+            WebSocketClient.this.handleException(session, command, headers, payload, exception);
         }
 
         @Override
         public void handleTransportError(StompSession session, Throwable exception) {
-            System.out.println("Transport error: " + exception.getMessage());
-            if (reconnectAutomatically && !session.isConnected()) {
-                try {
-                    Thread.sleep(5000); // Wait before trying to reconnect
-                    connect();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
+            WebSocketClient.this.handleTransportError(session, exception);
         }
 
         @Override
@@ -120,12 +152,14 @@ public class WebSocketClient implements Closeable {
 
         @Override
         public void handleFrame(StompHeaders headers, Object payload) {
-
         }
     }
 
-    protected static void subscribe(StompSession session, String destination, StompSessionHandlerAdapter adapter) {
-        System.out.println("Subscribing to " + destination);
-        session.subscribe(destination, adapter);
+    protected abstract void afterConnected(StompSession session, StompHeaders connectedHeaders);
+
+    protected void handleException(StompSession session, StompCommand command, StompHeaders headers, byte[] payload, Throwable exception) {
+    }
+
+    protected void handleTransportError(StompSession session, Throwable exception) {
     }
 }
