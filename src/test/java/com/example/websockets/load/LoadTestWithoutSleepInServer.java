@@ -1,7 +1,10 @@
 package com.example.websockets.load;
 
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
@@ -31,9 +34,9 @@ public class LoadTestWithoutSleepInServer {
         System.out.println("Connecting");
         long start = System.currentTimeMillis();
         AtomicInteger retries = new AtomicInteger(0);
-        try (ExecutorService executor = Executors.newFixedThreadPool(100)) {
-            CompletionService<Void> completionService = new ExecutorCompletionService<>(executor);
-            clients.forEach(c -> completionService.submit(() -> {
+        CountDownLatch latch = new CountDownLatch(clients.size());
+        try (ExecutorService executor = Executors.newFixedThreadPool(5)) {
+            clients.forEach(c -> executor.submit(() -> {
                 boolean connected = false;
                 do {
                     try {
@@ -44,16 +47,11 @@ public class LoadTestWithoutSleepInServer {
                         System.out.println(c.getIndex() + ": " + e.getMessage());
                     }
                 } while (!connected);
-                return null;
+                latch.countDown();
             }));
             long startSchedule = System.currentTimeMillis();
-            long lastPrint = startSchedule;
-            for (int i = 0; i < clients.size(); i++) {
-                completionService.take();
-                if (System.currentTimeMillis() - lastPrint > 1000) {
-                    lastPrint = System.currentTimeMillis();
-                    System.out.println(i + " connected in " + (System.currentTimeMillis() - startSchedule) + " ms with " + retries.get() + " retries");
-                }
+            while (!latch.await(1, TimeUnit.SECONDS)) {
+                System.out.println(latch.getCount() + " remaining in " + (System.currentTimeMillis() - startSchedule) + " ms with " + retries.get() + " retries");
             }
         }
         System.out.println(clients.size() + " clients connected in " + (System.currentTimeMillis() - start) + " ms with " + retries.get() + " retries");
@@ -61,7 +59,6 @@ public class LoadTestWithoutSleepInServer {
 
     private void startAll() {
         System.out.println("Running");
-//        CountDownLatch countDownLatch = new CountDownLatch(clients.size());
         long endTime = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(20);
         while (System.currentTimeMillis() < endTime) {
             sleep(1000);
