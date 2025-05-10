@@ -1,7 +1,7 @@
 package com.example.websockets.load;
 
 import com.example.websockets.client.WebSocketClient;
-import com.example.websockets.websockets.Messages;
+import com.example.websockets.websockets.broadcast.KeepaliveBroadcast;
 import com.example.websockets.websockets.load.LoadRequest;
 import com.example.websockets.websockets.load.LoadResponse;
 import lombok.Getter;
@@ -35,7 +35,7 @@ public class LoadWebSocketClient extends WebSocketClient {
         subscribe(
                 session,
                 TOPIC_PREFIX + TOPIC_BROADCAST,
-                Messages.KeepaliveBroadcast.class,
+                KeepaliveBroadcast.class,
                 _ -> receivedBroadcastMessages.incrementAndGet());
         subscribe(session,
                 REPLY_PREFIX + QUEUE_PREFIX + RESPONSE_TO_LOAD,

@@ -1,7 +1,10 @@
 package com.example.websockets.mains;
 
 import com.example.websockets.client.WebSocketClient;
-import com.example.websockets.websockets.Messages;
+import com.example.websockets.websockets.broadcast.KeepaliveBroadcast;
+import com.example.websockets.websockets.hello.HelloRequest;
+import com.example.websockets.websockets.hello.HelloResponse;
+import com.example.websockets.websockets.hello.JoinBroadcast;
 import lombok.Getter;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaders;
@@ -38,17 +41,17 @@ public class MainWebSocketClient extends WebSocketClient {
         subscribe(
                 session,
                 TOPIC_PREFIX + TOPIC_BROADCAST,
-                Messages.KeepaliveBroadcast.class,
+                KeepaliveBroadcast.class,
                 broadcast -> System.out.println("Keepalive " + broadcast.time()));
         subscribe(
                 session,
                 TOPIC_PREFIX + TOPIC_JOIN,
-                Messages.JoinBroadcast.class,
+                JoinBroadcast.class,
                 response -> System.out.println(response.sessionId() + ": Received greeting: " + response.text()));
         subscribe(
                 session,
                 REPLY_PREFIX + QUEUE_PREFIX + RESPONSE_TO_HELLO,
-                Messages.HelloResponse.class,
+                HelloResponse.class,
                 response -> System.out.println(response.sessionId() + ": Received hello: " + response.text()));
     }
 
@@ -101,7 +104,7 @@ public class MainWebSocketClient extends WebSocketClient {
                 System.out.println("Not connected. Attempting to reconnect...");
                 connectAsync().get();
             }
-            Messages.HelloRequest hello = new Messages.HelloRequest(command);
+            HelloRequest hello = new HelloRequest(command);
             send(REQUEST_GREETING, hello);
             send(REQUEST_HELLO, hello);
         } catch (Exception e) {

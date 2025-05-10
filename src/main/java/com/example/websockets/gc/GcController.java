@@ -1,4 +1,4 @@
-package com.example.websockets.websockets.gc;
+package com.example.websockets.gc;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,8 +19,5 @@ public class GcController {
         long after = (runtime.totalMemory() - runtime.freeMemory()) / 1_000_000;
         System.out.println("GC!!! from " + before + " to " + after);
         return new GcStatus(before, after);
-    }
-
-    public record GcStatus(long before, long after) {
     }
 }

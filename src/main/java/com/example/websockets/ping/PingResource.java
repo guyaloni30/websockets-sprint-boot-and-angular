@@ -13,7 +13,4 @@ public class PingResource {
         Thread.sleep(500);
         return new Pong("pong", System.currentTimeMillis());
     }
-
-    public record Pong(String response, long time) {
-    }
 }

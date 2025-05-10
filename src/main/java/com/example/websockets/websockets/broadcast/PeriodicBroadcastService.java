@@ -1,7 +1,6 @@
 package com.example.websockets.websockets.broadcast;
 
 import com.example.websockets.websockets.Consts;
-import com.example.websockets.websockets.Messages;
 import com.example.websockets.websockets.service.WebSocketsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -23,6 +22,6 @@ public class PeriodicBroadcastService {
         ++time;
         webSocketsService.sendAllJson(
                 Consts.TOPIC_PREFIX + Consts.TOPIC_BROADCAST,
-                new Messages.KeepaliveBroadcast(time));
+                new KeepaliveBroadcast(time));
     }
 }
