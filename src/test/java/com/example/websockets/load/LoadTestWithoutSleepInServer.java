@@ -40,6 +40,7 @@ public class LoadTestWithoutSleepInServer {
                         c.connectAsync().get();
                         connected = true;
                     } catch (Exception e) {
+                        retries.incrementAndGet();
                         System.out.println(c.getIndex() + ": " + e.getMessage());
                     }
                 } while (!connected);
@@ -51,7 +52,7 @@ public class LoadTestWithoutSleepInServer {
                 completionService.take();
                 if (System.currentTimeMillis() - lastPrint > 1000) {
                     lastPrint = System.currentTimeMillis();
-                    System.out.println(i + " connected in " + (System.currentTimeMillis() - startSchedule) + " ms");
+                    System.out.println(i + " connected in " + (System.currentTimeMillis() - startSchedule) + " ms with " + retries.get() + " retries");
                 }
             }
         }
