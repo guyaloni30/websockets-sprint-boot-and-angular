@@ -14,6 +14,7 @@ public class LoadController {
 
     @MessageMapping(Consts.REQUEST_LOAD)
     public void hello(LoadRequest msg, SimpMessageHeaderAccessor headerAccessor) throws InterruptedException {
+        //System.out.println("LoadController: " + msg);
         if (msg.delayMillis() > 0) {
             Thread.sleep(msg.delayMillis());
         }

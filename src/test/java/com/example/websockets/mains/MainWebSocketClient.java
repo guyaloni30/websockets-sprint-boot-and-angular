@@ -3,7 +3,6 @@ package com.example.websockets.mains;
 import com.example.websockets.client.WebSocketClient;
 import com.example.websockets.websockets.Messages;
 import lombok.Getter;
-import org.springframework.messaging.MessageDeliveryException;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
@@ -31,12 +30,6 @@ public class MainWebSocketClient extends WebSocketClient {
     protected final <T> void subscribe(StompSession session, String destination, Class<T> messageType, Consumer<T> handler) {
         System.out.println("Subscribing to " + destination);
         super.subscribe(session, destination, messageType, handler);
-    }
-
-    @Override
-    protected void onConnect() {
-        super.onConnect();
-        System.out.println("Connected");
     }
 
     @Override
@@ -70,8 +63,8 @@ public class MainWebSocketClient extends WebSocketClient {
         if (reconnectAutomatically && !isConnected()) {
             try {
                 Thread.sleep(5000); // Wait before trying to reconnect
-                connect();
-            } catch (InterruptedException e) {
+                connectAsync().get();
+            } catch (Exception e) {
                 Thread.currentThread().interrupt();
             }
         }
@@ -96,23 +89,21 @@ public class MainWebSocketClient extends WebSocketClient {
         }
         try {
             if ("exit".equalsIgnoreCase(command)) {
-                disconnect();
+                disconnect(100);
                 running = false;
                 return;
             }
             if ("disconnect".equalsIgnoreCase(command)) {
-                disconnect();
+                disconnect(100);
                 return;
             }
             if (!isConnected()) {
                 System.out.println("Not connected. Attempting to reconnect...");
-                connect();
+                connectAsync().get();
             }
             Messages.HelloRequest hello = new Messages.HelloRequest(command);
             send(REQUEST_GREETING, hello);
             send(REQUEST_HELLO, hello);
-        } catch (MessageDeliveryException e) {
-
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("Error: " + e.getMessage());
@@ -122,7 +113,7 @@ public class MainWebSocketClient extends WebSocketClient {
 
     private void safeConnect() {
         try {
-            connect();
+            connectAsync().get();
         } catch (Exception e) {
             try {
                 Thread.sleep(5000); // Wait 5 seconds before trying to reconnect

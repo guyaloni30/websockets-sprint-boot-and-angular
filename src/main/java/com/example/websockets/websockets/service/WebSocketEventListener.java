@@ -19,6 +19,7 @@ import java.util.TreeSet;
 @EnableScheduling
 @RequiredArgsConstructor
 public class WebSocketEventListener {
+    private static final Runtime runtime = Runtime.getRuntime();
     private final Set<String> sessions = Collections.synchronizedSet(new TreeSet<>());
 
     private final SimpMessageSendingOperations messagingTemplate;
@@ -29,11 +30,12 @@ public class WebSocketEventListener {
     public void print() {
         int current = sessions.size();
         int diff = current - lastSessions;
+        long mb = (runtime.totalMemory() - runtime.freeMemory()) / 1_000_000;
         String status = current + " concurrent sessions";
         if (diff != 0) {
             status += ", " + Math.abs(diff) + " " + ((diff > 0) ? "added" : "removed");
         }
-        System.out.println(status);
+        System.out.printf("Using %5d MB, %s%n", mb, status);
         lastSessions = sessions.size();
     }
 

@@ -17,7 +17,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 @RequiredArgsConstructor
@@ -39,6 +38,7 @@ public abstract class WebSocketClient implements Closeable {
         MappingJackson2MessageConverter mappingJackson2MessageConverter = new MappingJackson2MessageConverter();
         stompClient.setMessageConverter(new CompositeMessageConverter(List.of(mappingJackson2MessageConverter)));
         stompClient.setTaskScheduler(taskScheduler);
+        stompClient.start();
     }
 
     public static void shutdown() {
@@ -66,7 +66,7 @@ public abstract class WebSocketClient implements Closeable {
 
     @Override
     public void close() {
-        disconnect();
+        disconnect(0);
     }
 
     public final void send(String destination, Object message) {
@@ -77,31 +77,28 @@ public abstract class WebSocketClient implements Closeable {
         return (session != null) && session.isConnected();
     }
 
-    public final void connect() {
-        if (isConnected()) {
-            return;
-        }
-        try {
-            CompletableFuture<StompSession> completableFuture = stompClient.connectAsync(uri, null, null, new MyStompSessionHandler());
-            session = completableFuture.get();
-            onConnect();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException("Failed to connect: " + e.getMessage());
-        }
+    public final CompletableFuture<Void> connectAsync() {
+        return stompClient.connectAsync(uri, null, null, new MyStompSessionHandler())
+                .thenAccept(session -> this.session = session);
     }
 
-    protected void onConnect() {
-    }
-
-    public final void disconnect() {
+    public final void disconnect(long sleepAfterUnsubscribing) {
         subscriptions.forEach(StompSession.Subscription::unsubscribe);
         subscriptions.clear();
+        if (sleepAfterUnsubscribing > 0) {
+            try {
+                Thread.sleep(sleepAfterUnsubscribing);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
         if (session != null) {
             try {
                 session.disconnect();
             } catch (Exception e) {
                 //Do nothing
             }
+            session = null;
         }
     }
 
