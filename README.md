@@ -119,3 +119,12 @@ Key component interactions:
 - STOMP endpoints: /ws with SockJS fallback
 - Message broker: Simple in-memory broker
 - Destination prefixes: /app for application endpoints, /topic for subscriptions
+
+## Playing with the code
+- Hello[1/2/3] test classes can be used to test messaging and broadcast
+- LoadTestWithoutSleepInServer can be used to stress test the server
+- WebSocketClient is a basic websocket client - note that it doesn't release threads and if you're using it, your application cannot shut down
+- GenericsTest - gets a generic class from a child
+- ExecutorService
+  - ExecutorsTestClose - see that ExecutorService.close waits for all tasks to finish
+  - ExecutorsTestTryCatch - see that try-with-resources waits for all tasks to finish exiting the try block
