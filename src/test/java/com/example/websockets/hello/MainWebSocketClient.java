@@ -1,4 +1,4 @@
-package com.example.websockets.mains;
+package com.example.websockets.hello;
 
 import com.example.websockets.client.WebSocketClient;
 import com.example.websockets.websockets.broadcast.KeepaliveBroadcast;

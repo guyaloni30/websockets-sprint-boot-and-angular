@@ -1,10 +1,10 @@
-package com.example.websockets.mains;
+package com.example.websockets.hello;
 
 import com.example.websockets.client.WebSocketClient;
 
-public class Hello2 {
+public class Hello3 {
     public static void main(String[] args) {
-        try (MainWebSocketClient c = new MainWebSocketClient(2)) {
+        try (MainWebSocketClient c = new MainWebSocketClient(3)) {
             c.run();
         }
         WebSocketClient.shutdown();
